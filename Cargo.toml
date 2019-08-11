@@ -1,9 +1,9 @@
 [package]
 name = "redis-streams"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Jonathan Soo <jcsoo@agora.com>"]
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-itertools = "0.7.3"
-redis = "0.8.0"
+itertools = "0.8.0"
+redis = "0.11.0"

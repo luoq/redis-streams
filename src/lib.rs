@@ -32,11 +32,11 @@ impl Xadd {
         self
     }
 
-    pub fn query<RV: FromRedisValue>(&self, con: &Connection) -> RedisResult<RV> {
+    pub fn query<RV: FromRedisValue>(&self, con: &mut Connection) -> RedisResult<RV> {
         self.0.query(con)
     }
 
-    pub fn execute(&self, con: &Connection) {
+    pub fn execute(&self, con: &mut Connection) {
         let _ : () = self.query(con).unwrap();
     }
 }
@@ -281,7 +281,7 @@ mod tests {
     #[test]
     fn test_abc() {
         let client = redis::Client::open("redis://127.0.0.1/").unwrap();
-        let con = client.get_connection().unwrap();
+        let mut con = client.get_connection().unwrap();
         let _: () = con.set("abc", "def").unwrap();
         let v: String = con.get("abc").unwrap();
         assert!(v == "def");
