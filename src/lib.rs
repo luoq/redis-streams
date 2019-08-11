@@ -306,7 +306,7 @@ mod tests {
 
         // XREAD COUNT 1 STREAMS mystream -
 
-        let v: Option<Vec<Stream>> = con.xread_count(1, "mystream", "-").unwrap();
+        let v: Option<Vec<Stream>> = con.xread_count(1, "mystream", "0").unwrap();
 
         // bulk(
         //    bulk(
