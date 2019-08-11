@@ -6,11 +6,12 @@
 //! To use Redis Streams, you must have a version of Redis installed with stream support enabled. It is planned
 //! for streams to appear in Redis 5.0.
 
-extern crate redis;
 extern crate itertools;
+extern crate redis;
+
+use std::slice;
 
 use redis::*;
-use std::slice;
 
 pub fn xadd(stream: &str) -> Xadd {
     let mut cmd = cmd("XADD");
@@ -37,7 +38,7 @@ impl Xadd {
     }
 
     pub fn execute(&self, con: &mut Connection) {
-        let _ : () = self.query(con).unwrap();
+        let _: () = self.query(con).unwrap();
     }
 }
 
@@ -66,7 +67,7 @@ pub trait RedisStream {
     fn xread_block_multiple<B: ToRedisArgs, RV: FromRedisValue>(&mut self, block: B, entries: &[(String, String)]) -> RedisResult<RV>;
 
     fn xread_count<S: ToRedisArgs, I: ToRedisArgs, RV: FromRedisValue>(&mut self, count: isize, stream: S, id: I) -> RedisResult<RV>;
-    fn xread_count_multiple<RV: FromRedisValue>(&mut self, count: isize, entries: &[(String,  String)]) -> RedisResult<RV>;
+    fn xread_count_multiple<RV: FromRedisValue>(&mut self, count: isize, entries: &[(String, String)]) -> RedisResult<RV>;
 
     fn xread_count_block<B: ToRedisArgs, S: ToRedisArgs, I: ToRedisArgs, RV: FromRedisValue>(&mut self, count: isize, block: B, stream: S, id: I) -> RedisResult<RV>;
     fn xread_count_block_multiple<B: ToRedisArgs, RV: FromRedisValue>(&mut self, count: isize, block: B, entries: &[(String, String)]) -> RedisResult<RV>;
@@ -99,10 +100,10 @@ impl RedisStream for redis::Connection {
 
     fn xtrim_maxlen<S: ToRedisArgs, L: ToRedisArgs, RV: FromRedisValue>(&mut self, stream: S, max_len: L) -> RedisResult<RV> {
         cmd("XTRIM").arg(stream).arg("MAXLEN").arg(max_len).query(self)
-    }    
+    }
     fn xtrim_approx_maxlen<S: ToRedisArgs, L: ToRedisArgs, RV: FromRedisValue>(&mut self, stream: S, max_len: L) -> RedisResult<RV> {
         cmd("XTRIM").arg(stream).arg("MAXLEN").arg("~").arg(max_len).query(self)
-    }    
+    }
     fn xrange<S: ToRedisArgs, A: ToRedisArgs, B: ToRedisArgs, RV: FromRedisValue>(&mut self, stream: S, start: A, stop: B) -> RedisResult<RV> {
         cmd("XRANGE").arg(stream).arg(start).arg(stop).query(self)
     }
@@ -117,7 +118,7 @@ impl RedisStream for redis::Connection {
 
     fn xrevrange_count<S: ToRedisArgs, A: ToRedisArgs, B: ToRedisArgs, C: ToRedisArgs, RV: FromRedisValue>(&mut self, stream: S, start: A, stop: B, count: C) -> RedisResult<RV> {
         cmd("XREVRANGE").arg(stream).arg(start).arg(stop).arg("COUNT").arg(count).query(self)
-    }    
+    }
 
     fn xread<S: ToRedisArgs, I: ToRedisArgs, RV: FromRedisValue>(&mut self, stream: S, id: I) -> RedisResult<RV> {
         cmd("XREAD").arg("STREAMS").arg(stream).arg(id).query(self)
@@ -132,7 +133,7 @@ impl RedisStream for redis::Connection {
         for &(_, ref i) in entries.iter() {
             cmd.arg(i);
         }
-        cmd.query(self)       
+        cmd.query(self)
     }
 
     fn xread_block<B: ToRedisArgs, S: ToRedisArgs, I: ToRedisArgs, RV: FromRedisValue>(&mut self, block: B, stream: S, id: I) -> RedisResult<RV> {
@@ -148,7 +149,7 @@ impl RedisStream for redis::Connection {
         for &(_, ref i) in entries.iter() {
             cmd.arg(i);
         }
-        cmd.query(self)   
+        cmd.query(self)
     }
 
     fn xread_count<S: ToRedisArgs, I: ToRedisArgs, RV: FromRedisValue>(&mut self, count: isize, stream: S, id: I) -> RedisResult<RV> {
@@ -164,7 +165,8 @@ impl RedisStream for redis::Connection {
         for &(_, ref i) in entries.iter() {
             cmd.arg(i);
         }
-        cmd.query(self)         }
+        cmd.query(self)
+    }
 
 
     fn xread_count_block<B: ToRedisArgs, S: ToRedisArgs, I: ToRedisArgs, RV: FromRedisValue>(&mut self, count: isize, block: B, stream: S, id: I) -> RedisResult<RV> {
@@ -180,8 +182,8 @@ impl RedisStream for redis::Connection {
         for &(_, ref i) in entries.iter() {
             cmd.arg(i);
         }
-        cmd.query(self)        
-    }    
+        cmd.query(self)
+    }
 }
 
 pub struct Stream {
@@ -201,7 +203,7 @@ impl Stream {
 
 impl FromRedisValue for Stream {
     fn from_redis_value(v: &Value) -> RedisResult<Stream> {
-        let (id, entries) : (Value, Vec<Entry>) = from_redis_value(v)?;
+        let (id, entries): (Value, Vec<Entry>) = from_redis_value(v)?;
         Ok(Stream {
             id: id,
             entries: entries,
@@ -216,12 +218,12 @@ pub struct Entry {
 
 impl FromRedisValue for Entry {
     fn from_redis_value(v: &Value) -> RedisResult<Entry> {
-        let (id, key_values) : (Value, Vec<Value>) = from_redis_value(v)?;
+        let (id, key_values): (Value, Vec<Value>) = from_redis_value(v)?;
         Ok(Entry {
             id: id,
             key_values: key_values,
         })
-    }    
+    }
 }
 
 impl Entry {
@@ -275,8 +277,9 @@ pub trait HandleEntry {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use itertools::Itertools;
+
+    use super::*;
 
     #[test]
     fn test_abc() {
@@ -293,10 +296,10 @@ mod tests {
         let client = redis::Client::open("redis://127.0.0.1/").unwrap();
         let mut con = client.get_connection().unwrap();
         let _: () = con.del("mystream").unwrap();
-        
+
         // XADD mystream * abc 123 def 456
 
-        let s: String = con.xadd_multiple("mystream", &[("abc","123"), ("def", "456")]).unwrap();
+        let s: String = con.xadd_multiple("mystream", &[("abc", "123"), ("def", "456")]).unwrap();
 
         // XLEN mystream
 
@@ -306,7 +309,9 @@ mod tests {
 
         // XREAD COUNT 1 STREAMS mystream -
 
-        let v: Option<Vec<Stream>> = con.xread_count(1, "mystream", "0").unwrap();
+        let streams: Vec<Stream> = con.xread_count(1, "mystream", "0").unwrap();
+
+        assert_eq!(streams.len(), 1);
 
         // bulk(
         //    bulk(
@@ -321,36 +326,65 @@ mod tests {
         //             string-data('"456"')
         //  )))))
 
-        if let Some(ref streams) = v {
-            for stream in streams.iter() {
-                let stream_id: String = stream.id().unwrap();
-                assert_eq!(stream_id, "mystream");
+        for stream in streams.iter() {
+            let stream_id: String = stream.id().unwrap();
+            assert_eq!(stream_id, "mystream");
 
-                for entry in stream.entries() {
-                    let entry_id: String = entry.id().unwrap();
-                    assert_eq!(entry_id, s);
+            for entry in stream.entries() {
+                let entry_id: String = entry.id().unwrap();
+                assert_eq!(entry_id, s);
 
-                    for (n, (k, v)) in entry.key_values().tuples().enumerate() {
-                        let k: String = from_redis_value(k).unwrap();
-                        let v: String = from_redis_value(v).unwrap();
+                for (n, (k, v)) in entry.key_values().tuples().enumerate() {
+                    let k: String = from_redis_value(k).unwrap();
+                    let v: String = from_redis_value(v).unwrap();
 
-                        match n {
-                            0 => {
-                                assert_eq!(k, "abc");
-                                assert_eq!(v, "123");
-                            },
-                            1 => {
-                                assert_eq!(k, "def");
-                                assert_eq!(v, "456");
-                            },
-                            _ => panic!("unexpected key value entry"),
+                    match n {
+                        0 => {
+                            assert_eq!(k, "abc");
+                            assert_eq!(v, "123");
                         }
+                        1 => {
+                            assert_eq!(k, "def");
+                            assert_eq!(v, "456");
+                        }
+                        _ => panic!("unexpected key value entry"),
                     }
                 }
             }
         }
 
+
         let _: () = con.del("mystream").unwrap();
+
+
+        let s: String = con.xadd("mystream", "k1", "v1").unwrap();
+        let s: String = con.xadd("mystream", "k2", "v2").unwrap();
+        let res: Vec<Entry> = con.xrange("mystream", "-", "+").unwrap();
+
+        assert_eq!(res.len(), 2);
+
+        let mut last_id = String::from("-");
+        for (i, entry) in res.iter().enumerate() {
+            let id: String = entry.id().unwrap();
+            last_id = id;
+            let (k, v) = entry.key_values().tuples().next().unwrap();
+            let k: String = from_redis_value(k).unwrap();
+            let v: String = from_redis_value(v).unwrap();
+            match i {
+                0 => {
+                    assert_eq!(k, "k1");
+                    assert_eq!(v, "v1");
+                }
+                1 => {
+                    assert_eq!(k, "k2");
+                    assert_eq!(v, "v2");
+                }
+                _ => panic!("unexpected key value entry"),
+            }
+        }
+
+        let res: Vec<Entry> = con.xrange("mystream", last_id, "+").unwrap();
+        assert_eq!(res.len(), 1);
     }
 
     #[test]
@@ -396,7 +430,5 @@ mod tests {
         assert_eq!(entries.len(), 0);
 
         let _: () = con.del(stream_id).unwrap();
-        
     }
-
 }
