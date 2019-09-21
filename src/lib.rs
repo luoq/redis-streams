@@ -186,9 +186,10 @@ impl RedisStream for redis::Connection {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct Stream {
-    id: Value,
-    entries: Vec<Entry>,
+    pub id: Value,
+    pub entries: Vec<Entry>,
 }
 
 impl Stream {
@@ -211,9 +212,10 @@ impl FromRedisValue for Stream {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct Entry {
-    id: Value,
-    key_values: Vec<Value>,
+    pub id: Value,
+    pub key_values: Vec<Value>,
 }
 
 impl FromRedisValue for Entry {
